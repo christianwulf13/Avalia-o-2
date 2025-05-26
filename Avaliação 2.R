@@ -22,10 +22,10 @@ library(tidyverse)
 #interbancário realizadas entre instituições de conglomerados diferentes 
 # (Extra-grupo), desprezando-se as demais (Intra-Grupo).
 
-my.id <- c(cdi = 12)
+my.id <- c(gdp = 7327)
 
 df.bcb <- gbcbd_get_series(id = my.id ,
-                           first.date = '2000-01-01',
+                           first.date = '1990-01-01',
                            last.date = Sys.Date(),
                            format.data = 'long',
                            use.memoise = TRUE, 
@@ -38,9 +38,9 @@ glimpse(df.bcb)
 
 p <- ggplot(df.bcb, aes(x = ref.date, y = value) ) +
   geom_line() + 
-  labs(title = 'CDI', 
+  labs(title = 'GDP', 
        subtitle = paste0(min(df.bcb$ref.date), ' to ', max(df.bcb$ref.date)),
-       x = '', y = 'Taxa de juros CDI, % a.d.') + 
+       x = '', y = 'Var. % anual') + 
   theme_light()
 
 print(p)
