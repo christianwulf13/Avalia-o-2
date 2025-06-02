@@ -1,0 +1,133 @@
+---
+title: "Análise do PIB Agropecuário Brasileiro"
+format: html
+execute:
+  echo: true
+  warning: false
+editor: visual
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+# Instalação dos pacotes necessários (caso não estejam instalados)
+if (!requireNamespace("GetBCBData", quietly = TRUE)) install.packages("GetBCBData")
+if (!requireNamespace("tidyverse", quietly = TRUE)) install.packages("tidyverse")
+if (!requireNamespace("gganimate", quietly = TRUE)) install.packages("gganimate")
+if (!requireNamespace("transformr", quietly = TRUE)) install.packages("transformr")
+if (!requireNamespace("scales", quietly = TRUE)) install.packages("scales")
+install.packages("gifski", repos = "https://cloud.r-project.org")
+```
+
+```{r setup, message=FALSE, warning=FALSE}
+#| label: rocket
+#| include: false
+library("GetBCBData")
+library("tidyverse")
+library("gifski")
+library("gganimate")
+library("transformr")
+```
+
+## Variável analisada: PIB - Agropecuária (Código 7327)
+
+A variável selecionada para este estudo é a **Taxa de Variação Real Anual do PIB Agropecuário** (código 7327 do Sistema Gerenciador de Séries Temporais do Banco Central do Brasil - SGS/BCB). Esse indicador mede a variação percentual anual do Produto Interno Bruto (PIB) do setor agropecuário brasileiro, ajustado pela inflação, oferecendo uma visão precisa do crescimento ou retração do setor ao longo do tempo.
+
+### Importância da variável
+
+O setor agropecuário desempenha um papel estratégico na economia brasileira, destacando-se pela geração expressiva de empregos e pela contribuição significativa do Brasil como um dos principais exportadores globais de alimentos. O acompanhamento da taxa de variação do PIB agropecuário é essencial para:
+
+-   **Avaliação do desempenho setorial** ao longo dos anos, permitindo a identificação de tendências e ciclos econômicos;
+
+-   **Análise dos impactos de políticas públicas**, fatores climáticos extremos e crises econômicas sobre a produção agropecuária;
+
+-   **Apoio à tomada de decisão** de produtores, investidores e formuladores de políticas, proporcionando insights fundamentais para estratégias de crescimento e adaptação.
+
+Além disso, essa métrica é uma referência para estudos econômicos e análises de mercado, sendo amplamente utilizada por instituições financeiras, pesquisadores e agentes do setor na formulação de estratégias e previsão de cenários futuros.
+
+```{r}
+#| label: bat
+#| include: false
+my.id <- c(pib_agro = 7327)
+
+df.bcb <- gbcbd_get_series(
+  id = my.id,
+  first.date = '1971-01-01',
+  last.date = Sys.Date(),
+  format.data = 'long',
+  use.memoise = TRUE, 
+  cache.path = tempdir(),
+  do.parallel = FALSE
+)
+
+```
+
+## Gráfico animado do PIB Agropecuário
+
+```{r}
+#| label: dadosempainel
+#| warning: false
+#| echo: false
+# Paleta de cores vibrantes inspirada na natureza/agropecuária
+vibrant_green <- "#00C853"
+vibrant_yellow <- "#FFD600"
+vibrant_brown <- "#6D4C41"
+vibrant_blue <- "#00B8D4"
+
+df.bcb <- df.bcb %>%
+  mutate(
+    year = lubridate::year(ref.date)
+  )
+
+anim_plot <- ggplot(df.bcb, aes(x = year, y = value)) +
+  geom_col(fill = vibrant_green, color = vibrant_brown, width = 0.7, alpha = 0.85) +
+  geom_line(aes(group = 1), color = vibrant_blue, size = 1.3, alpha = 0.7) +
+  geom_point(color = vibrant_yellow, size = 2, alpha = 0.8) +
+  labs(
+    title = "PIB Agropecuário Brasileiro ({closest_state})",
+    subtitle = "Taxa de variação real anual do PIB da Agropecuária (1971 - {max(df.bcb$year)})",
+    x = "Ano", y = "Variação (%)",
+    caption = "Fonte: IBGE/BCB (Cód. 7327)"
+  ) +
+  theme_light(base_size = 15) +
+  theme(
+    plot.title = element_text(face = "bold", size = 20, color = vibrant_brown),
+  plot.subtitle = element_text(size = 15),
+  axis.title.y = element_text(face = "bold"),
+  axis.text = element_text(color = "#333333"),
+  plot.background = element_rect(fill = "#FFFDE7"),
+  panel.grid.major.y = element_line(color = vibrant_brown),
+  panel.grid.minor = element_blank()
+  ) +
+  scale_y_continuous(labels = function(x) paste0(x, "%")) +
+  transition_states(year, transition_length = 2, state_length = 1, wrap = FALSE) +
+  enter_fade() + 
+  exit_fade()
+
+anim_plot
+# Renderização do gif animado
+#anim_save("pib_agropecuario.gif", animate(anim_plot, duration = 18, fps = 15, width = 900, height = 500, renderer = gifski_renderer()))
+
+# Exibição do gif animado no QMD
+#knitr::include_graphics("pib_agropecuario.gif")
+```
+
+## Comentários sobre a série histórica
+
+O gráfico acima mostra a evolução do PIB agropecuário brasileiro de 1971 até o presente. Destacam-se alguns pontos importantes:
+
+-   **Década de 1970:** Anos de forte crescimento, impulsionados pela modernização agrícola e abertura de novas fronteiras, exemplo: Cerrado. Além do Cerrado, outras regiões passaram a ter grande relevância, como o MATOPIBA (Maranhão, Tocantins, Piauí e Bahia), que se consolidou como nova fronteira agrícola no Brasil desde os anos 2000. A expansão territorial favoreceu o aumento da produção agrícola, especialmente de grãos.
+-   **Crises econômicas dos anos 1980 e 1990:** Oscilações acentuadas, com quedas em anos de crise e hiperinflação. Programas como o Plano Safra e o PROAGRO foram fundamentais para garantir crédito e proteção contra perdas, influenciando diretamente a estabilidade do crescimento do PIB agropecuário. Além disso, a Lei Kandir (1996), que desonerou exportações de produtos primários, impulsionou a competitividade internacional do setor.
+-   **Avanço tecnológico e estabilidade econômica pós-2000:** O setor apresenta maior estabilidade e crescimento, refletindo avanços em tecnologia, crédito rural e exportações. A demanda internacional por commodities agrícolas, especialmente por países como China e Estados Unidos, teve papel essencial na variação do PIB agropecuário. A ascensão da China como principal compradora de soja e carne bovina, por exemplo, influenciou picos de crescimento do setor.
+-   **Impactos climáticos:** Quedas acentuadas em anos de seca severa, como em 1985, 2005, 2012 e 2021, evidenciam a vulnerabilidade do setor ao clima. Embora o setor tenha crescido significativamente, desafios ambientais e sustentabilidade passaram a ser questões centrais, especialmente no combate ao desmatamento e ao uso de tecnologias de baixa emissão. Avanços na agricultura regenerativa e práticas sustentáveis também começaram a ganhar espaço nas últimas décadas.
+-   **Pandemia de COVID-19 (2020):** O setor agropecuário demonstrou resiliência, mantendo crescimento enquanto outros setores sofreram retração. Nos últimos anos, a adoção de tecnologias como a agricultura de precisão, inteligência artificial e automação trouxe ganhos de produtividade. O uso de sensores e satélites para monitoramento de lavouras ajudou na otimização de recursos e na reduçaõ de perdas
+
+Esses movimentos refletem tanto fatores internos (tecnologia, políticas agrícolas, crédito) quanto externos (demanda global, preços de commodities e eventos climáticos extremos).
+
+------------------------------------------------------------------------
+
+**Referências:**
+
+-   [Metadados da Série SGS/BCB 7327](https://www3.bcb.gov.br/sgspub/localizarseries/localizarSeries.do?method=prepararTelaLocalizarSeries)
+-   [Vignette GetBCBData](https://cran.r-project.org/web/packages/GetBCBData/vignettes/GetBCBData-vignette.html)
+-   [IBGE - Indicadores Agropecuários](https://www.ibge.gov.br/explica/produto_interno_bruto.php)
